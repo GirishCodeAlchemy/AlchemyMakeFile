@@ -1,0 +1,50 @@
+BUILDPATH=$(CURDIR)
+BINARY = elixir
+IN = ./main.go
+OUT = ./
+
+GOARCH = amd64
+OSL = linux
+OSM = macos
+
+DEV = "Girish"
+
+VERSION = $(shell git describe --tags --abbrev=0)
+DATE = $(shell date +"%Y-%m-%d %H:%M:%S")
+CURRENT_DIR = $(notdir $(CURDIR))
+
+BLDPACK = github.com/GirishCodeAlchemy/alchemy-service/app/setup
+
+LDFLAGS = -ldflags="\
+			-X '${BLDPACK}.version=${VERSION}' \
+			-X '${BLDPACK}.dev=${DEV}' \
+			-X '${BLDPACK}.date=${DATE}'"
+
+.PHONY: build
+build: clean linux darwin
+
+linux: ## Build the app for linux on x64
+	@echo "Compilando para Linux sobre ${GOARCH} -> \c"
+	@GOOS=${OSL} GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-${OSL}-${GOARCH} ${IN}
+	@cp ${BINARY}-${OSL}-${GOARCH} ${OUT}${BINARY}
+	@ls ${BINARY}-${OSL}-${GOARCH}
+
+darwin: ## Build the app for MacOS
+	@echo "Compilando para MacOS sobre ${GOARCH} -> \c"
+	@GOOS=darwin GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-${OSM}-${GOARCH} ${IN}
+	@cp ${BINARY}-${OSL}-${GOARCH} ${OUT}${BINARY}
+	@ls ${BINARY}-${OSL}-${GOARCH}
+
+mssql: ## Build the container DB MSSQL
+	cd ./mssql-setup; chmod +x ./stand-up-db.sh; ./stand-up-db.sh
+
+mssql-arm: ## Build the container DB MSSQL
+	cd ./mssql-setup-arm; chmod +x ./stand-up-db.sh; ./stand-up-db.sh
+
+help:
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+clean:
+	@echo "Removing binarios..."
+	@-rm -f ${BINARY}-*
+	@-rm -f ${OUT}${BINARY}
